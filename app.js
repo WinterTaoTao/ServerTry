@@ -32,8 +32,9 @@ app.use('/users', users);
 app.post('/fileupload', function (req, res) {
   var form = new formidable.IncomingForm();
   form.parse(req, function (err, fields, files) {
-    extract_keyframes(files.filetoupload.path)
+    extract_keyframes(files.filetoupload.path);
     res.write('File uploaded');
+    // res.send({msg: 'success'});
     res.end();
   })
 });
