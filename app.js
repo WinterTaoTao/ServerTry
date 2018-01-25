@@ -9,7 +9,8 @@ var lessMiddleware = require('less-middleware');
 var index = require('./routes/index');
 var users = require('./routes/users');
 
-var formidable = require('formidable')
+var formidable = require('formidable');
+var cors = require('cors');
 
 var app = express();
 
@@ -29,13 +30,12 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/', index);
 app.use('/users', users);
 
-app.post('/fileupload', function (req, res) {
+app.post('/fileupload', cors(), function (req, res) {
   var form = new formidable.IncomingForm();
   form.parse(req, function (err, fields, files) {
-    extract_keyframes(files.filetoupload.path);
-    res.write('File uploaded');
-    // res.send({msg: 'success'});
-    res.end();
+    extract_keyframes(files.filetoupload.path, res);
+    // res.write('File uploaded');
+    // res.end();
   })
 });
 
@@ -61,7 +61,7 @@ module.exports = app;
 
 
 //extract keyframes
-function extract_keyframes(video_path){
+function extract_keyframes(video_path, res){
   var output_path = 'assets/output/';
   var ffmpeg = require('ffmpeg');
   var fs = require('fs');
@@ -76,8 +76,11 @@ function extract_keyframes(video_path){
     video.addCommand('-vf', 'select="eq(pict_type\\,PICT_TYPE_I)"');
     video.addCommand('-vsync', '0');
     video.save(output_path + 'frame%d.jpg', function (error, files) {
-      if (!error)
+      if (!error) {
         console.log('Keyframes: ' + files);
+        var imgContent = fs.readFileSync('assets/output/frame1.jpg', 'binary');
+        res.send(imgContent);
+      }
     });
 
   }, function (err) {
