@@ -9,8 +9,11 @@ var lessMiddleware = require('less-middleware');
 var index = require('./routes/index');
 var users = require('./routes/users');
 
+var fs = require('fs');
+
 var formidable = require('formidable');
 var cors = require('cors');
+var mkdirs = require('jm-mkdirs')
 
 var app = express();
 
@@ -33,9 +36,8 @@ app.use('/users', users);
 app.post('/fileupload', cors(), function (req, res) {
   var form = new formidable.IncomingForm();
   form.parse(req, function (err, fields, files) {
+    console.log(files.filetoupload.path)
     extract_keyframes(files.filetoupload.path, res);
-    // res.write('File uploaded');
-    // res.end();
   })
 });
 
@@ -62,28 +64,49 @@ module.exports = app;
 
 //extract keyframes
 function extract_keyframes(video_path, res){
-  var output_path = 'assets/output/';
+  // var expend_path = video_path.replace(/\//g, '');
+  var output_path = 'assets/output' + video_path + '/';
   var ffmpeg = require('ffmpeg');
-  var fs = require('fs');
 
   if(!fs.existsSync(output_path)){
-    fs.mkdirSync(output_path);
+    mkdirs.sync(output_path);
   }
 
   var process = new ffmpeg(video_path);
   process.then(function (video) {
+    // set ffmpeg options
     video.addCommand('-q:v', '2');
     video.addCommand('-vf', 'select="eq(pict_type\\,PICT_TYPE_I)"');
     video.addCommand('-vsync', '0');
+    // save keframes
     video.save(output_path + 'frame%d.jpg', function (error, files) {
       if (!error) {
-        console.log('Keyframes: ' + files);
-        var imgContent = fs.readFileSync('assets/output/frame1.jpg', 'binary');
-        res.send(imgContent);
+        frames = findSync(output_path);
+        console.log(frames[0]);
+        var imgContent = [];
+        for (var index = 0; index < frames.length; index++) {
+          imgContent.push(fs.readFileSync(frames[index], 'binary'));
+        }
+        res.send({keyframes: imgContent});
+
       }
+      res.end('finished');
     });
 
   }, function (err) {
     console.log('Error: ' + err);
   });
+}
+
+function findSync(startPath) {
+  var result = [];
+  function finder (st_path) {
+    var files = fs.readdirSync(st_path);
+    for (var i = 0; i < files.length; i++) {
+      var fpath = path.join(startPath, files[i]);
+      result.push(fpath)
+    }
+  }
+  finder(startPath);
+  return result;
 }
