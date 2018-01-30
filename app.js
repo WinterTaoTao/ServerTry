@@ -64,7 +64,6 @@ module.exports = app;
 
 //extract keyframes
 function extract_keyframes(video_path, res){
-  // var expend_path = video_path.replace(/\//g, '');
   var output_path = 'assets/output' + video_path + '/';
   var ffmpeg = require('ffmpeg');
 
@@ -82,15 +81,21 @@ function extract_keyframes(video_path, res){
     video.save(output_path + 'frame%d.jpg', function (error, files) {
       if (!error) {
         frames = findSync(output_path);
-        console.log(frames[0]);
         var imgContent = [];
-        for (var index = 0; index < frames.length; index++) {
+        var stepSize = 1;
+        if (frames.length > 20) {
+          stepSize = Math.floor(frames.length / 10);
+        }
+        for (var index = 0; imgContent.length < 10 && index < frames.length; index+=stepSize) {
           imgContent.push(fs.readFileSync(frames[index], 'binary'));
         }
+        for (var i = 0; i < frames.length; i++) {
+          fs.unlinkSync(frames[i])
+        }
+        fs.rmdirSync(output_path)
         res.send({keyframes: imgContent});
-
       }
-      res.end('finished');
+      res.end('finish')
     });
 
   }, function (err) {
