@@ -36,7 +36,6 @@ app.use('/users', users);
 app.post('/fileupload', cors(), function (req, res) {
   var form = new formidable.IncomingForm();
   form.parse(req, function (err, fields, files) {
-    console.log(files.filetoupload.path)
     extract_keyframes(files.filetoupload.path, res);
   })
 });
@@ -64,7 +63,7 @@ module.exports = app;
 
 //extract keyframes
 function extract_keyframes(video_path, res){
-  var output_path = 'assets/output' + video_path + '/';
+  var output_path = 'assets/output/' + video_path.replace(/\//g, '') + '/';
   var ffmpeg = require('ffmpeg');
 
   if(!fs.existsSync(output_path)){
